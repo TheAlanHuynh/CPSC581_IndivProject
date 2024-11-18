@@ -1,3 +1,16 @@
+<!-- 
+# CPSC 581 - Individual Project: Proxemics
+# Name: Alan Huynh
+# UCID: 30137295
+# Date: November 17, 2024
+# Citation: 
+#   - The majority of this code was written by Damiano Falcioni and Juan Mellado
+#   - This HTML file along with the CSS file are the only files with modification 
+#     that were not written by the authors above.
+#   - There were some modifications to the javascript to add functionality for manipulating markers
+#   - CHATGPT was used to write some function for calculating/track the distance of the marker
+#   - The HTML is primiarily originally written.
+-->
 <html>
   <head>
     <title>CPSC 581 - Individual Project</title>
@@ -13,18 +26,18 @@
 
     <!-- JavaScript Links -->
     <script type="text/javascript" src="libs/polyfill.js"></script>
-    <script type="text/javascript" src="libs/posit1.js"></script>
     <script type="text/javascript" src="libs/cv.js"></script>
     <script type="text/javascript" src="libs/aruco.js"></script>
 
     <script>
       var video, canvas, context, imageData, detector;
-      var markerSize = 5.0; // Marker size in centimeters
-      var focalLength = 700; // Estimated focal length
+
+      // --------------------------------------------------
+      var markerSize = 5.0;
+      var focalLength = 700;
       var lastDetectedMessageSetKey = null;
       var lastDetectedMarkerId = null;
       var messageIndices = {};
-
       var messageSets = {
         set1: [
           "Nice Smile!",
@@ -44,6 +57,7 @@
           "Life Goes On",
         ],
       };
+      // --------------------------------------------------
 
       function onLoad() {
         video = document.getElementById("video");
@@ -53,7 +67,6 @@
         canvas.width = parseInt(canvas.style.width);
         canvas.height = parseInt(canvas.style.height);
 
-        // Setup getUserMedia for webcam access
         if (navigator.mediaDevices === undefined) {
           navigator.mediaDevices = {};
         }
@@ -92,9 +105,11 @@
 
         requestAnimationFrame(tick);
 
+        // --------------------------------------------------
         // Initialize date and time updates
         updateDateTime();
-        setInterval(updateDateTime, 60000); // Update every minute
+        setInterval(updateDateTime, 60000); // 1 minute
+        // --------------------------------------------------
       }
 
       function tick() {
@@ -107,6 +122,7 @@
           drawCorners(markers);
           drawId(markers);
 
+          // --------------------------------------------------
           var messageElement = document.querySelector(".mirror-info.message");
           var mirrorInfoElements = document.querySelectorAll(".mirror-info");
           var salutation1Element = document.querySelector(
@@ -225,6 +241,7 @@
           } else {
             salutation2Element.classList.add("hidden");
           }
+          // --------------------------------------------------
         }
       }
 
@@ -282,6 +299,7 @@
         }
       }
 
+      // --------------------------------------------------
       function getMarkerSizeInPixels(corners) {
         var width = Math.hypot(
           corners[0].x - corners[1].x,
@@ -339,6 +357,7 @@
           return null;
         }
       }
+      // --------------------------------------------------
 
       window.onload = onLoad;
     </script>
