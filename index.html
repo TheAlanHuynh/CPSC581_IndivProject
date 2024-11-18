@@ -353,7 +353,7 @@
 
     <main>
       <div class="mirror-container">
-        <video class="mirror-video hidden" id="video" autoplay="true"></video>
+        <video class="mirror-video" id="video" autoplay="true"></video>
         <div class="mirror-info date"></div>
         <div class="mirror-info time"></div>
         <div class="mirror-info location">Calgary, AB</div>
@@ -361,7 +361,11 @@
         <div class="mirror-info message hidden"></div>
         <div class="mirror-info salutation1 hidden">Hi Alan!</div>
         <div class="mirror-info salutation2 hidden">Hi Alice!</div>
-        <canvas id="canvas" style="width: 640px; height: 480px"></canvas>
+        <canvas
+          class="hidden"
+          id="canvas"
+          style="width: 640px; height: 480px"
+        ></canvas>
       </div>
     </main>
 
