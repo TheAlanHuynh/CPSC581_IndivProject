@@ -41,9 +41,9 @@ main {
 .mirror-container {
   position: absolute;
   border: solid 5px black;
-  top: 20%;
+  top: 10%;
   right: 50%;
-  transform: translateX(65%);
+  transform: translateX(60%);
 }
 
 .mirror-video {
