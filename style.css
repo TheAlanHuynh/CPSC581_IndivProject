@@ -1,0 +1,143 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Roboto", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+  text-align: center;
+}
+
+header {
+  width: 100%;
+  background-color: #af4c4c;
+  color: white;
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+  background-image: url(textures/MirrorBackground7.webp);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+/* Mirror Info: */
+.mirror-container {
+  position: absolute;
+  border: solid 5px black;
+  top: 20%;
+  right: 50%;
+  transform: translateX(65%);
+}
+
+.mirror-video {
+  width: 640px;
+  height: 480px;
+  transform: scaleX(-1);
+}
+
+.mirror-info {
+  position: absolute;
+  z-index: 10;
+
+  font-family: "Roboto", Arial, sans-serif;
+  color: white;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+
+  padding: 4.8px;
+  font-size: 24px;
+}
+
+.time {
+  top: 30;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+.date {
+  top: 0;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+.location {
+  top: 0;
+  left: 0;
+}
+
+.temp {
+  top: 0;
+  right: 0;
+}
+
+.message {
+  bottom: 50;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+.mirror-info.message {
+  font-size: 24px;
+  font-weight: 500;
+  text-align: center;
+  color: orange;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.salutation1 {
+  position: absolute;
+  top: 50;
+  left: 0;
+}
+
+.salutation2 {
+  position: absolute;
+  top: 50;
+  right: 0;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Footer styles */
+.footer {
+  width: 100%;
+  background-color: #333333;
+  color: white;
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.page-links {
+  list-style: none;
+  display: flex;
+  gap: 2rem;
+}
+
+.page-links li a {
+  color: white;
+  text-decoration: none;
+}
+
+.page-links li a:hover {
+  text-decoration: underline;
+}

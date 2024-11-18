@@ -1,22 +1,49 @@
 <html>
   <head>
-    <title>Augmented Reality</title>
+    <title>CPSC 581 - Individual Project</title>
 
-    <script type="text/javascript" src="libs/Three.js"></script>
-    <script type="text/javascript" src="libs/svd.js"></script>
+    <!-- Font Link -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+    />
+
+    <!-- StyleSheet Link -->
+    <link rel="stylesheet" href="./style.css" />
+
+    <!-- JavaScript Links -->
+    <script type="text/javascript" src="libs/polyfill.js"></script>
     <script type="text/javascript" src="libs/posit1.js"></script>
     <script type="text/javascript" src="libs/cv.js"></script>
     <script type="text/javascript" src="libs/aruco.js"></script>
 
     <script>
-      var video, canvas, context, imageData, detector, posit;
-      var renderer1, renderer2, renderer3;
-      var scene1, scene2, scene3, scene4;
-      var camera1, camera2, camera3, camera4;
-      var plane1, plane2, model, texture;
-      var step = 0.0;
+      var video, canvas, context, imageData, detector;
+      var markerSize = 5.0; // Marker size in centimeters
+      var focalLength = 700; // Estimated focal length
+      var lastDetectedMessageSetKey = null;
+      var lastDetectedMarkerId = null;
+      var messageIndices = {};
 
-      var modelSize = 35.0; //millimeters
+      var messageSets = {
+        set1: [
+          "Nice Smile!",
+          "You're Gonna Have A Great Day!",
+          "Don't Forget To Wipe!",
+          "Keep It Up!",
+          "Don't Stop!",
+          "You're On Your Way To Your Best!",
+        ],
+        set2: [
+          "You Got This!",
+          "Push Through This!",
+          "One More Step!",
+          "You Can Be The MVP!",
+          "Heaviest Things In Life Are Unmade Decisions",
+          "If your life was a book, how good was your book?",
+          "Life Goes On",
+        ],
+      };
 
       function onLoad() {
         video = document.getElementById("video");
@@ -26,6 +53,7 @@
         canvas.width = parseInt(canvas.style.width);
         canvas.height = parseInt(canvas.style.height);
 
+        // Setup getUserMedia for webcam access
         if (navigator.mediaDevices === undefined) {
           navigator.mediaDevices = {};
         }
@@ -61,12 +89,12 @@
           });
 
         detector = new AR.Detector();
-        posit = new POS.Posit(modelSize, canvas.width);
-
-        createRenderers();
-        createScenes();
 
         requestAnimationFrame(tick);
+
+        // Initialize date and time updates
+        updateDateTime();
+        setInterval(updateDateTime, 60000); // Update every minute
       }
 
       function tick() {
@@ -77,9 +105,126 @@
 
           var markers = detector.detect(imageData);
           drawCorners(markers);
-          updateScenes(markers);
+          drawId(markers);
 
-          render();
+          var messageElement = document.querySelector(".mirror-info.message");
+          var mirrorInfoElements = document.querySelectorAll(".mirror-info");
+          var salutation1Element = document.querySelector(
+            ".mirror-info.salutation1"
+          );
+          var salutation2Element = document.querySelector(
+            ".mirror-info.salutation2"
+          );
+
+          var showMirrorInfo = false;
+          var showSalutation1 = false;
+          var showSalutation2 = false;
+
+          var closestMarker = null;
+          var minDistance = Infinity;
+
+          // Loop over the detected markers to find ones within distance
+          for (var i = 0; i < markers.length; i++) {
+            var marker = markers[i];
+            var markerId = marker.id;
+
+            // Calculate distance
+            var markerDimensions = getMarkerSizeInPixels(marker.corners);
+            var markerWidthInPixels = markerDimensions.width;
+
+            var distance = calculateDistance(
+              markerSize,
+              focalLength,
+              markerWidthInPixels
+            );
+
+            if (distance <= 50) {
+              showMirrorInfo = true;
+
+              // Handle salutations based on marker ID
+              if (markerId === 18 || markerId === 100) {
+                showSalutation1 = true;
+              } else if (markerId === 130 || markerId === 200) {
+                showSalutation2 = true;
+              }
+
+              // Find the closest marker
+              if (distance < minDistance) {
+                minDistance = distance;
+                closestMarker = {
+                  id: markerId,
+                  distance: distance,
+                };
+              }
+            }
+          }
+
+          if (closestMarker) {
+            var markerId = closestMarker.id;
+
+            // Get the message set key for this marker ID
+            var messageSetKey = getMessageSetKey(markerId);
+
+            if (messageSetKey) {
+              // Check if the message set key is different from the last detected message set key
+              if (messageSetKey !== lastDetectedMessageSetKey) {
+                lastDetectedMessageSetKey = messageSetKey;
+
+                // Initialize or increment the message index for this message set
+                if (messageIndices[messageSetKey] === undefined) {
+                  messageIndices[messageSetKey] = 0;
+                } else {
+                  messageIndices[messageSetKey]++;
+                  if (
+                    messageIndices[messageSetKey] >=
+                    messageSets[messageSetKey].length
+                  ) {
+                    messageIndices[messageSetKey] = 0; // Loop back to start
+                  }
+                }
+
+                // Get the message at the current index
+                var messageList = messageSets[messageSetKey];
+                var messageIndex = messageIndices[messageSetKey];
+                var messageToShow = messageList[messageIndex];
+
+                // Update the message element
+                messageElement.textContent = messageToShow;
+                messageElement.classList.remove("hidden");
+              }
+            } else {
+              // If no messages for this marker ID
+              messageElement.classList.add("hidden");
+              lastDetectedMessageSetKey = null;
+            }
+          } else {
+            // No marker within range
+            messageElement.classList.add("hidden");
+            lastDetectedMessageSetKey = null;
+          }
+
+          if (showMirrorInfo) {
+            mirrorInfoElements.forEach(function (element) {
+              element.classList.remove("hidden");
+            });
+          } else {
+            mirrorInfoElements.forEach(function (element) {
+              element.classList.add("hidden");
+            });
+          }
+
+          // Handle salutations
+          if (showSalutation1) {
+            salutation1Element.classList.remove("hidden");
+          } else {
+            salutation1Element.classList.add("hidden");
+          }
+
+          if (showSalutation2) {
+            salutation2Element.classList.remove("hidden");
+          } else {
+            salutation2Element.classList.add("hidden");
+          }
         }
       }
 
@@ -93,13 +238,13 @@
 
         context.lineWidth = 3;
 
-        for (i = 0; i < markers.length; ++i) {
+        for (i = 0; i !== markers.length; ++i) {
           corners = markers[i].corners;
 
           context.strokeStyle = "red";
           context.beginPath();
 
-          for (j = 0; j < corners.length; ++j) {
+          for (j = 0; j !== corners.length; ++j) {
             corner = corners[j];
             context.moveTo(corner.x, corner.y);
             corner = corners[(j + 1) % corners.length];
@@ -114,264 +259,126 @@
         }
       }
 
-      function createRenderers() {
-        renderer1 = new THREE.WebGLRenderer();
-        renderer1.setClearColor(0xffff00, 1);
-        renderer1.setSize(canvas.width, canvas.height);
-        document.getElementById("container1").appendChild(renderer1.domElement);
-        scene1 = new THREE.Scene();
-        camera1 = new THREE.PerspectiveCamera(
-          40,
-          canvas.width / canvas.height,
-          1,
-          1000
-        );
-        scene1.add(camera1);
+      function drawId(markers) {
+        var corners, corner, x, y, i, j;
 
-        renderer2 = new THREE.WebGLRenderer();
-        renderer2.setClearColor(0xffff00, 1);
-        renderer2.setSize(canvas.width, canvas.height);
-        document.getElementById("container2").appendChild(renderer2.domElement);
-        scene2 = new THREE.Scene();
-        camera2 = new THREE.PerspectiveCamera(
-          40,
-          canvas.width / canvas.height,
-          1,
-          1000
-        );
-        scene2.add(camera2);
+        context.strokeStyle = "blue";
+        context.lineWidth = 1;
 
-        renderer3 = new THREE.WebGLRenderer();
-        renderer3.setClearColor(0xffffff, 1);
-        renderer3.setSize(canvas.width, canvas.height);
-        document.getElementById("container").appendChild(renderer3.domElement);
+        for (i = 0; i !== markers.length; ++i) {
+          corners = markers[i].corners;
 
-        scene3 = new THREE.Scene();
-        camera3 = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5);
-        scene3.add(camera3);
+          x = Infinity;
+          y = Infinity;
 
-        scene4 = new THREE.Scene();
-        camera4 = new THREE.PerspectiveCamera(
-          40,
-          canvas.width / canvas.height,
-          1,
-          1000
-        );
-        scene4.add(camera4);
-      }
+          for (j = 0; j !== corners.length; ++j) {
+            corner = corners[j];
 
-      function render() {
-        renderer1.clear();
-        renderer1.render(scene1, camera1);
-
-        renderer2.clear();
-        renderer2.render(scene2, camera2);
-
-        renderer3.autoClear = false;
-        renderer3.clear();
-        renderer3.render(scene3, camera3);
-        renderer3.render(scene4, camera4);
-      }
-
-      function createScenes() {
-        plane1 = createPlane();
-        scene1.add(plane1);
-
-        plane2 = createPlane();
-        scene2.add(plane2);
-
-        texture = createTexture();
-        scene3.add(texture);
-
-        model = createModel();
-        scene4.add(model);
-      }
-
-      function createPlane() {
-        var object = new THREE.Object3D(),
-          geometry = new THREE.PlaneGeometry(1.0, 1.0, 0.0),
-          material = new THREE.MeshNormalMaterial(),
-          mesh = new THREE.Mesh(geometry, material);
-
-        object.eulerOrder = "YXZ";
-
-        object.add(mesh);
-
-        return object;
-      }
-
-      function createTexture() {
-        var texture = new THREE.Texture(video),
-          object = new THREE.Object3D(),
-          geometry = new THREE.PlaneGeometry(1.0, 1.0, 0.0),
-          material = new THREE.MeshBasicMaterial({
-            map: texture,
-            depthTest: false,
-            depthWrite: false,
-          }),
-          mesh = new THREE.Mesh(geometry, material);
-
-        object.position.z = -1;
-
-        object.add(mesh);
-
-        return object;
-      }
-
-      function createModel() {
-        var object = new THREE.Object3D(),
-          geometry = new THREE.SphereGeometry(0.5, 15, 15, Math.PI),
-          texture = THREE.ImageUtils.loadTexture("textures/earth.jpg"),
-          material = new THREE.MeshBasicMaterial({ map: texture }),
-          mesh = new THREE.Mesh(geometry, material);
-
-        object.add(mesh);
-
-        return object;
-      }
-
-      function updateScenes(markers) {
-        var corners, corner, pose, i;
-
-        if (markers.length > 0) {
-          corners = markers[0].corners;
-
-          for (i = 0; i < corners.length; ++i) {
-            corner = corners[i];
-
-            corner.x = corner.x - canvas.width / 2;
-            corner.y = canvas.height / 2 - corner.y;
+            x = Math.min(x, corner.x);
+            y = Math.min(y, corner.y);
           }
 
-          pose = posit.pose(corners);
-
-          updateObject(plane1, pose.bestRotation, pose.bestTranslation);
-          updateObject(
-            plane2,
-            pose.alternativeRotation,
-            pose.alternativeTranslation
-          );
-          updateObject(model, pose.bestRotation, pose.bestTranslation);
-
-          updatePose(
-            "pose1",
-            pose.bestError,
-            pose.bestRotation,
-            pose.bestTranslation
-          );
-          updatePose(
-            "pose2",
-            pose.alternativeError,
-            pose.alternativeRotation,
-            pose.alternativeTranslation
-          );
-
-          step += 0.025;
-
-          model.rotation.z -= step;
+          context.strokeText(markers[i].id, x, y);
         }
-
-        texture.children[0].material.map.needsUpdate = true;
       }
 
-      function updateObject(object, rotation, translation) {
-        object.scale.x = modelSize;
-        object.scale.y = modelSize;
-        object.scale.z = modelSize;
-
-        object.rotation.x = -Math.asin(-rotation[1][2]);
-        object.rotation.y = -Math.atan2(rotation[0][2], rotation[2][2]);
-        object.rotation.z = Math.atan2(rotation[1][0], rotation[1][1]);
-
-        object.position.x = translation[0];
-        object.position.y = translation[1];
-        object.position.z = -translation[2];
+      function getMarkerSizeInPixels(corners) {
+        var width = Math.hypot(
+          corners[0].x - corners[1].x,
+          corners[0].y - corners[1].y
+        );
+        var height = Math.hypot(
+          corners[1].x - corners[2].x,
+          corners[1].y - corners[2].y
+        );
+        return { width: width, height: height };
       }
 
-      function updatePose(id, error, rotation, translation) {
-        var yaw = -Math.atan2(rotation[0][2], rotation[2][2]);
-        var pitch = -Math.asin(-rotation[1][2]);
-        var roll = Math.atan2(rotation[1][0], rotation[1][1]);
+      function calculateDistance(markerSize, focalLength, markerWidthInPixels) {
+        return (markerSize * focalLength) / markerWidthInPixels;
+      }
 
-        var d = document.getElementById(id);
-        d.innerHTML =
-          " error: " +
-          error +
-          "<br/>" +
-          " x: " +
-          (translation[0] | 0) +
-          " y: " +
-          (translation[1] | 0) +
-          " z: " +
-          (translation[2] | 0) +
-          "<br/>" +
-          " yaw: " +
-          Math.round((-yaw * 180.0) / Math.PI) +
-          " pitch: " +
-          Math.round((-pitch * 180.0) / Math.PI) +
-          " roll: " +
-          Math.round((roll * 180.0) / Math.PI);
+      function displayDistance(distance, index) {
+        context.font = "20px Arial";
+        context.fillStyle = "yellow";
+        var yPosition = 30 + index * 30; // Adjust the y position for each marker
+        context.fillText(
+          "Distance: " + distance.toFixed(2) + " cm",
+          10,
+          yPosition
+        );
+      }
+
+      function updateDateTime() {
+        var now = new Date();
+
+        // Options for formatting date and time
+        var dateOptions = {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        };
+        var timeOptions = { hour: "numeric", minute: "numeric", hour12: true };
+
+        // Format date and time
+        var formattedDate = now.toLocaleDateString("en-US", dateOptions);
+        var formattedTime = now.toLocaleTimeString("en-US", timeOptions);
+
+        // Update the HTML elements
+        document.querySelector(".mirror-info.date").textContent = formattedDate;
+        document.querySelector(".mirror-info.time").textContent = formattedTime;
+      }
+
+      function getMessageSetKey(markerId) {
+        if (markerId === 18 || markerId === 130) {
+          return "set1";
+        } else if (markerId === 100 || markerId === 200) {
+          return "set2";
+        } else {
+          return null;
+        }
       }
 
       window.onload = onLoad;
     </script>
   </head>
 
-  <body style="text-align: center; font-family: monospace">
-    <video
-      id="video"
-      width="320"
-      height="240"
-      autoplay="true"
-      style="display: none"
-    ></video>
-
-    <div style="margin: 10px"><strong>-= Augmented Reality =-</strong></div>
-    <div style="width: 100%">
-      <div style="width: 650px; margin-left: auto; margin-right: auto">
-        <canvas
-          id="canvas"
-          style="
-            width: 320px;
-            height: 240px;
-            float: left;
-            border: solid 1px black;
-          "
-        ></canvas>
-        <div
-          id="container"
-          style="
-            width: 320px;
-            height: 240px;
-            float: left;
-            border: solid 1px black;
-            background: green;
-          "
-        ></div>
-        <div style="clear: both"></div>
-        <div style="float: left; border: solid 1px black">
-          <div
-            id="container1"
-            style="width: 320px; height: 240px; background: red"
-          ></div>
-          <div id="pose1"></div>
-        </div>
-        <div style="float: left; border: solid 1px black">
-          <div
-            id="container2"
-            style="width: 320px; height: 240px; background: blue"
-          ></div>
-          <div id="pose2"></div>
-        </div>
+  <body style="text-align: center">
+    <header class="header">
+      <div>
+        <p>CPSC 581 - Individual Project</p>
       </div>
-    </div>
-    <div style="clear: both"></div>
-    <div style="margin: 15px">
-      <strong
-        >Powered by
-        <a href="https://damianofalcioni.github.io/js-aruco2/">js-aruco2</a> and
-        <a href="https://github.com/mrdoob/three.js">Three.js</a></strong
-      >
-    </div>
+    </header>
+
+    <main>
+      <div class="mirror-container">
+        <video class="mirror-video hidden" id="video" autoplay="true"></video>
+        <div class="mirror-info date"></div>
+        <div class="mirror-info time"></div>
+        <div class="mirror-info location">Calgary, AB</div>
+        <div class="mirror-info temp">14 &deg;C</div>
+        <div class="mirror-info message hidden"></div>
+        <div class="mirror-info salutation1 hidden">Hi Alan!</div>
+        <div class="mirror-info salutation2 hidden">Hi Alice!</div>
+        <canvas id="canvas" style="width: 640px; height: 480px"></canvas>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div>
+        <ul class="page-links">
+          <li>
+            <a href="https://alanhuynh.ca/phone-sensor-unlock"
+              >Alan's Portfolio</a
+            >
+          </li>
+          <li>
+            Powered by
+            <a href="https://damianofalcioni.github.io/js-aruco2/">js-aruco2</a>
+          </li>
+        </ul>
+      </div>
+    </footer>
   </body>
 </html>
