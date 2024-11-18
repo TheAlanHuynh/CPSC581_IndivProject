@@ -30,7 +30,7 @@ main {
   align-items: center;
   flex: 1;
   width: 100%;
-  background-image: url(textures/MirrorBackground7.webp);
+  background-image: url(textures/MirrorBackground.webp);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
